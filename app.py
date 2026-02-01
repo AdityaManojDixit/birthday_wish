@@ -1,23 +1,22 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from cryptography.fernet import Fernet
+import os
 
 app = FastAPI()
 
-# -------------------- Zero-width emoji chars --------------------
+# -------------------- Encryption Setup --------------------
+# Generate a key once, store as ENV variable in Render
+# For testing, you can generate a key locally:
+#   from cryptography.fernet import Fernet
+#   key = Fernet.generate_key()
+#   print(key)
+SECRET_KEY = os.environ.get("SECRET_KEY", Fernet.generate_key())
+fernet = Fernet(SECRET_KEY)
+
 ZWSP, ZWNJ, ZWJ, WJ = "\u200B", "\u200C", "\u200D", "\u2060"
 
-# -------------------- Models --------------------
-class Message(BaseModel):
-    text: str
-
-# -------------------- Helper Functions --------------------
-def caesar(text, shift=3, encrypt=True):
-    return "".join(
-        chr((ord(c) - (ord('A') if c.isupper() else ord('a')) + (shift if encrypt else -shift)) % 26 +
-            (ord('A') if c.isupper() else ord('a'))) if c.isalpha() else c
-        for c in text
-    )
-
+# -------------------- Hidden Emoji Functions --------------------
 def decode_hidden_emojis(text):
     out, i = "", 0
     while i < len(text):
@@ -32,19 +31,23 @@ def decode_hidden_emojis(text):
         i += 1
     return out
 
-def decrypt_text(cipher_text):
-    """Full decrypt: hidden emojis + Caesar"""
-    return caesar(decode_hidden_emojis(cipher_text), encrypt=False)
+# -------------------- Encryption / Decryption --------------------
+def encrypt_text(plain_text: str) -> str:
+    return fernet.encrypt(plain_text.encode()).decode()
 
-# -------------------- API Endpoints --------------------
-@app.post("/decode_emojis")
-def api_decode_emojis(msg: Message):
-    return {"decoded": decode_hidden_emojis(msg.text)}
+def decrypt_text(cipher_text: str) -> str:
+    # First decode emojis, then decrypt
+    decoded = decode_hidden_emojis(cipher_text)
+    return fernet.decrypt(decoded.encode()).decode()
+
+# -------------------- API --------------------
+class Message(BaseModel):
+    text: str
+
+@app.post("/encrypt")
+def api_encrypt(msg: Message):
+    return {"encrypted": encrypt_text(msg.text)}
 
 @app.post("/decrypt")
 def api_decrypt(msg: Message):
     return {"decrypted": decrypt_text(msg.text)}
-
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
