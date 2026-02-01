@@ -1,4 +1,4 @@
-from app import FastAPI
+from fastapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -44,3 +44,7 @@ def api_decode_emojis(msg: Message):
 @app.post("/decrypt")
 def api_decrypt(msg: Message):
     return {"decrypted": decrypt_text(msg.text)}
+
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
