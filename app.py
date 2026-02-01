@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from app import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()
