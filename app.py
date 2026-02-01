@@ -11,7 +11,7 @@ app = FastAPI()
 #   from cryptography.fernet import Fernet
 #   key = Fernet.generate_key()
 #   print(key)
-SECRET_KEY = os.environ.get("SECRET_KEY", Fernet.generate_key())
+SECRET_KEY = os.environ.get("SECRET_KEY")
 fernet = Fernet(SECRET_KEY) 
 
 ZWSP, ZWNJ, ZWJ, WJ = "\u200B", "\u200C", "\u200D", "\u2060"
